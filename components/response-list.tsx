@@ -183,7 +183,7 @@ export function ResponseList({ opponentWords, responses, style }: ResponseListPr
                   size="sm" 
                   className="h-7 px-2 text-xs text-gray-500 hover:text-[#1AAD19]"
                   onClick={() => handleFollowUp(response.text)}
-                  disabled={isLoadingFollowUp || hasFollowUp}
+                  disabled={isLoadingFollowUp || Boolean(hasFollowUp)}
                 >
                   <MessageSquareReply size={14} className="mr-1" />
                   {isLoadingFollowUp ? '生成中...' : hasFollowUp ? '已追问' : '追问'}

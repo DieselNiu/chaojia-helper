@@ -12,6 +12,28 @@ import { CommonTags } from '@/components/common-tags'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useToast } from '@/hooks/use-toast'
 
+// 声明 Web Speech API 类型
+declare global {
+  interface Window {
+    SpeechRecognition?: any
+    webkitSpeechRecognition?: any
+  }
+}
+
+interface SpeechRecognitionEvent {
+  results: {
+    [index: number]: {
+      [index: number]: {
+        transcript: string
+      }
+    }
+  }
+}
+
+interface SpeechRecognitionErrorEvent {
+  error: string
+}
+
 interface ArgumentFormProps {
   onNewResponse?: () => void
 }
@@ -149,22 +171,34 @@ export function ArgumentForm({ onNewResponse }: ArgumentFormProps) {
   }
   
   const toggleVoiceInput = () => {
-    if (!isRecording && 'SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
+    if (!isRecording && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
       setIsRecording(true)
       
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
-      const recognition = new SpeechRecognition()
+      // 类型断言处理 SpeechRecognition API
+      const SpeechRecognitionClass = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+      
+      if (!SpeechRecognitionClass) {
+        toast({
+          title: '浏览器不支持语音识别',
+          description: '请使用Chrome、Edge或Safari等现代浏览器',
+          variant: 'destructive',
+        })
+        setIsRecording(false)
+        return
+      }
+      
+      const recognition = new SpeechRecognitionClass()
       recognition.lang = 'zh-CN'
       recognition.continuous = false
       recognition.interimResults = false
       
-      recognition.onresult = (event) => {
+      recognition.onresult = (event: SpeechRecognitionEvent) => {
         const transcript = event.results[0][0].transcript
         setOpponentWords(prev => prev ? `${prev} ${transcript}` : transcript)
         setIsRecording(false)
       }
       
-      recognition.onerror = (event) => {
+      recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
         console.error('Speech recognition error', event.error)
         setIsRecording(false)
         toast({
